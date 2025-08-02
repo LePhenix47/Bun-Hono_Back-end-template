@@ -73,7 +73,6 @@ The project uses a `.env` file for environment variables. Create a `.env` file i
 ```env
 NODE_ENV=development
 PORT=3000
-DISCORD_WEBHOOK_URL=
 ```
 
 ## Installation and usage
@@ -82,7 +81,7 @@ Clone the repository:
 
 ```sh
 # Note you can use "." to clone the repository in the same directory without creating a new folder
-git clone https://github.com/LePhenix47/Dev-Portfolio-Back-End_Younes-Lahouiti ./[FOLDER_NAME] 
+git clone https://github.com/LePhenix47/Bun-Hono_Back-end-template ./[FOLDER_NAME] 
 
 cd template-backend
 ```
