@@ -12,6 +12,7 @@ import contactRouter from "@api/contact/index";
 import { configureRateLimiterApp } from "@utils/rate-limiter/rate-limiter.utils";
 
 import { cors } from "hono/cors";
+import { serveEmojiFavicon } from "stoker/middlewares";
 
 /**
  * Creates the main application instance.
@@ -31,6 +32,7 @@ function createApp(): OpenAPIHono {
 
   app.use("*", cors());
 
+  app.use(serveEmojiFavicon("🔥"));
   app.use(logger());
 
   return app;
