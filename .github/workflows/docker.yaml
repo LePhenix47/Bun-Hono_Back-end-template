@@ -1,0 +1,63 @@
+name: Docker image build
+
+on:
+  workflow_call: # This allows it to be triggered from another workflow
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  image-build:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun for scripts in package.json
+        uses: oven-sh/setup-bun@v2 # See https://github.com/marketplace/actions/setup-bun
+        with:
+          bun-version: "1.2.2"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+        with:
+          version: latest
+          cache-binary: true
+
+      - name: Debug Secrets
+        run: |
+          echo "DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}"
+          echo "DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD != '' }}"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create .env file from sample and secrets
+        run:
+          | # Copy .env_sample to .env and clean up optional variables after # Facultative, then update mandatory variables
+          sed '/# Facultative/,$d' .env_sample > .env
+
+          sed -i "s|^NODE_ENV=.*|NODE_ENV=${{ vars.NODE_ENV }}|" .env
+
+      - name: Check .env file contents
+        run: cat .env
+
+      - name: Build Docker image
+        run: |
+          bun run docker-compose:build-image
+        timeout-minutes: 10
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push lephenix47/template-backend:latest
+
+  deployer:
+    needs: image-build
+    # This ensures Docker build runs only if tests pass
+    uses: ./.github/workflows/deploy.yaml
+    secrets: inherit

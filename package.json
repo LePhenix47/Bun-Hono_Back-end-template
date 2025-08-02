@@ -1,0 +1,36 @@
+{
+  "name": "portfolio-messager",
+  "module": "server.ts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "install:dev": "bun install --save-text-lockfile",
+    "install:prod": "bun install --save-text-lockfile",
+    "start": "bun --watch server.ts",
+    "dev": "bun --watch server.ts",
+    "test": "bun test",
+    "app:build": "bun build src/app.ts --outdir dist --minify",
+    "app:build-start": "bun dist/app.js",
+    "app:build-delete": "rm -rf dist/",
+    "docker-compose:remote-run": "bun run check-docker && docker compose down && docker compose up",
+    "docker-compose:local-run": "bun run check-docker && docker compose -f Docker/Docker-compose.local.yaml up --build",
+    "docker-compose:build-image": "bun run check-docker && docker compose -f Docker/Docker-compose.local.yaml build",
+    "check-docker": "bun ./Docker/check-docker-engine.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "hono": "^4.6.19"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^0.18.3",
+    "@hono/zod-validator": "^0.4.2",
+    "@scalar/hono-api-reference": "^0.5.170",
+    "hono-rate-limiter": "^0.4.2",
+    "portfolio-messager": "file:",
+    "stoker": "^1.4.3",
+    "zod": "^3.24.1"
+  }
+}
