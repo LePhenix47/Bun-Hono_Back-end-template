@@ -24,7 +24,13 @@ This backend is containerized using Docker and includes a CI/CD pipeline for aut
       - [**Build and Run the Application Locally with Docker Compose**](#build-and-run-the-application-locally-with-docker-compose)
     - [**CI/CD Pipeline**](#cicd-pipeline)
     - [**Deployment**](#deployment)
-      - [**VPS Deployment Example**:](#vps-deployment-example)
+    - [**GitHub Secrets \& Variables**](#github-secrets--variables)
+      - [**1. Secrets**](#1-secrets)
+      - [**2. Variables**](#2-variables)
+      - [**Environment-Specific Secrets \& Variables**](#environment-specific-secrets--variables)
+      - [**How to Use in Workflows**](#how-to-use-in-workflows)
+      - [**Summary Table**](#summary-table)
+      - [**VPS Deployment Example**](#vps-deployment-example)
     - [**Additional Resources**](#additional-resources)
 
 ## Tech stack
@@ -120,6 +126,7 @@ These interfaces provide an easy way to explore and test API endpoints.
 For an easier development experience, we're using **Docker Compose** to build and run the application with a single command:
 
 1. **Build and start the application**:
+
    ```sh
    # Runs this command: docker compose -f Docker/docker-compose.yml build
    bun run docker compose
@@ -130,6 +137,7 @@ For an easier development experience, we're using **Docker Compose** to build an
 
 3. **Stop the application**:  
    You can stop the app by running:
+
    ```sh
    docker compose down
    ```
@@ -153,14 +161,65 @@ The backend can be deployed to a cloud service or a VPS:
 - **Docker Hub + VPS**: Pull the image and run it on your VPS
 - **AWS/GCP/Azure**: Deploy using ECS, Cloud Run, or App Services
 
-#### **VPS Deployment Example**:
+---
+
+### **GitHub Secrets & Variables**
+
+GitHub Actions supports two main ways to manage configuration and sensitive data for your workflows:
+
+#### **1. Secrets**
+
+- **Purpose:** Store sensitive information (API keys, passwords, tokens).
+- **Usage:** Automatically masked in logs. Access them in workflows using `${{ secrets.SECRET_NAME }}`.
+- **Scope:** Can be set at repository, environment, or organization level.
+
+#### **2. Variables**
+
+- **Purpose:** Store non-sensitive configuration values (e.g., environment names, flags).
+- **Usage:** Access them in workflows using `${{ vars.VAR_NAME }}`.
+- **Scope:** Like secrets, can be global (repo/org) or environment-specific.
+
+#### **Environment-Specific Secrets & Variables**
+
+- If you assign a secret or variable to an **environment** (e.g., `production`, `staging`), it’s only available when the workflow references that environment.
+- **Global** secrets/vars (not tied to an environment) are available to all workflows in the repo.
+
+#### **How to Use in Workflows**
+
+- To access environment-specific secrets/vars, your workflow must specify the `environment` key in the job:
+
+  ```yaml
+  jobs:
+    deploy:
+      environment: production
+      steps:
+        - name: Use secret
+          run: echo ${{ secrets.MY_SECRET }}
+  ```
+
+- If you don’t specify an environment, only global secrets/vars are available.
+
+#### **Summary Table**
+
+| Type     | Sensitive? | Access Syntax         | Scope                 |
+| -------- | ---------- | --------------------- | --------------------- |
+| Secret   | Yes        | `${{ secrets.NAME }}` | Global or Environment |
+| Variable | No         | `${{ vars.NAME }}`    | Global or Environment |
+
+> **Tip:** Use environment-specific secrets/vars for deployment credentials or settings that differ between `staging` and `production`.
+
+For more, see [GitHub Actions: Encrypted secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) and [Variables](https://docs.github.com/en/actions/learn-github-actions/variables).
+
+#### **VPS Deployment Example**
 
 1. **Pull the image from Docker Hub**:
+
    ```sh
    docker pull [YOUR_DOCKER_USERNAME]/[DOCKERHUB_REPO_NAME]
    ```
 
 2. **Run the container on your VPS**:
+
    ```sh
    docker run -d -p 3000:3000 --env-file .env [YOUR_DOCKER_USERNAME]/[DOCKERHUB_REPO_NAME]
    ```
