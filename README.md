@@ -23,14 +23,18 @@ This backend is containerized using Docker and includes a CI/CD pipeline for aut
     - [**Production (Docker)**](#production-docker)
       - [**Build and Run the Application Locally with Docker Compose**](#build-and-run-the-application-locally-with-docker-compose)
     - [**CI/CD Pipeline**](#cicd-pipeline)
-    - [**Deployment**](#deployment)
     - [**GitHub Secrets \& Variables**](#github-secrets--variables)
       - [**1. Secrets**](#1-secrets)
       - [**2. Variables**](#2-variables)
       - [**Environment-Specific Secrets \& Variables**](#environment-specific-secrets--variables)
       - [**How to Use in Workflows**](#how-to-use-in-workflows)
       - [**Summary Table**](#summary-table)
-      - [**VPS Deployment Example**](#vps-deployment-example)
+    - [**Deployment**](#deployment)
+      - [🐳 VPS Setup Overview](#-vps-setup-overview)
+      - [🧠 Architecture](#-architecture)
+      - [🧾 Sample Caddyfile](#-sample-caddyfile)
+      - [🚀 How Deployment Works](#-how-deployment-works)
+      - [🔐 Secrets Used](#-secrets-used)
     - [**Additional Resources**](#additional-resources)
 
 ## Tech stack
@@ -154,13 +158,6 @@ This project includes a **GitHub Actions** workflow for the following:
 
 The workflow is defined in `.github/workflows/bun.yml`.
 
-### **Deployment**
-
-The backend can be deployed to a cloud service or a VPS:
-
-- **Docker Hub + VPS**: Pull the image and run it on your VPS
-- **AWS/GCP/Azure**: Deploy using ECS, Cloud Run, or App Services
-
 ---
 
 ### **GitHub Secrets & Variables**
@@ -210,19 +207,81 @@ GitHub Actions supports two main ways to manage configuration and sensitive data
 
 For more, see [GitHub Actions: Encrypted secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) and [Variables](https://docs.github.com/en/actions/learn-github-actions/variables).
 
-#### **VPS Deployment Example**
+### **Deployment**
 
-1. **Pull the image from Docker Hub**:
+This backend is deployed on a **Hostinger VPS** using **Docker + Caddy**.
 
-   ```sh
-   docker pull [YOUR_DOCKER_USERNAME]/[DOCKERHUB_REPO_NAME]
-   ```
+#### 🐳 VPS Setup Overview
 
-2. **Run the container on your VPS**:
+- The project uses **GitHub Actions** to automate:
+  - Building the Docker image
+  - Pushing it to Docker Hub
+  - Remotely deploying via SSH
+- A `.env` file and `docker-compose.yml` are securely copied to the VPS.
+- **Caddy** serves as a reverse proxy and HTTPS provider.
 
-   ```sh
-   docker run -d -p 3000:3000 --env-file .env [YOUR_DOCKER_USERNAME]/[DOCKERHUB_REPO_NAME]
-   ```
+#### 🧠 Architecture
+
+- Your app runs in a Docker container on the VPS
+- Caddy routes `https://youneslahouiti.com/portfolio/api/*` to `localhost:3000/api/*`
+- This keeps your app organized behind a clean domain
+
+#### 🧾 Sample Caddyfile
+
+```caddyfile
+youneslahouiti.com {
+    root * /usr/share/caddy
+    file_server
+
+    # Portfolio API
+    handle_path /portfolio/api/* {
+        rewrite * /api{path}
+        reverse_proxy localhost:3000
+    }
+
+    # Chess API (future)
+    # handle_path /chess/api/* {
+    #     reverse_proxy localhost:4000
+    # }
+}
+```
+
+> Caddy handles HTTPS automatically using Let's Encrypt. No manual certificate setup needed.
+
+#### 🚀 How Deployment Works
+
+- When you push to `master` or `dev`, this triggers:
+  - ✅ Tests → 🏗️ Build → 🐳 Image push → 🔐 Secure deploy via SSH
+- Your VPS receives `.env` and `docker-compose.yml`
+- It runs:
+
+```bash
+docker compose down
+docker compose up -d --build
+sudo service caddy reload
+```
+
+Everything is handled automatically via GitHub Actions using:
+
+```yaml
+uses: appleboy/scp-action@v1
+uses: appleboy/ssh-action@v1
+```
+
+#### 🔐 Secrets Used
+
+| Secret / Var Name       | Purpose                       |
+| ----------------------- | ----------------------------- |
+| `VPS_HOSTNAME`          | IP or domain of VPS           |
+| `VPS_USERNAME`          | SSH user                      |
+| `VPS_PORT`              | SSH port (default: 22)        |
+| `VPS_DEPLOYER_PASSWORD` | Used by the deploy workflow   |
+| `DOCKER_USERNAME`       | Push access to Docker Hub     |
+| `DOCKER_PASSWORD`       | Auth token or Docker password |
+
+---
+
+For more details, see the full workflows under `.github/workflows/`.
 
 ---
 
